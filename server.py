@@ -8,19 +8,21 @@ from tensorflow.keras.models import load_model
 app = Flask(__name__)
 CORS(app)
 
-# Load model and scaler
+# Load the model and scaler
 model = None
 scaler = None
 
 try:
+    # Paths to the saved model and scaler
     model_path = os.path.join("Instances", "loan_model.h5")
     scaler_path = os.path.join("Instances", "scalar.pkl")
-
+    
+    # Load the model
     model = load_model(model_path)
     print(f"Model loaded successfully from {model_path}")
 
-    with open(scaler_path, 'rb') as f:
-        scaler = joblib.load(f)
+    # Load the scaler
+    scaler = joblib.load(scaler_path)
     print(f"Scaler loaded successfully from {scaler_path}")
 
 except Exception as e:
@@ -28,23 +30,24 @@ except Exception as e:
 
 @app.route("/")
 def main():
+    """Render the main HTML page."""
     return render_template("index.html")
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Check if model and scaler are loaded
+        # Ensure the model and scaler are loaded
         if model is None or scaler is None:
-            print("Model or scaler not loaded correctly. Please check the server logs.")	
-            return jsonify({"error": "Model or scaler not loaded correctly. Please check the server logs."}), 500
+            return jsonify({"error": "Model or scaler not loaded correctly. Check the server logs."}), 500
 
-        # Parse input data from the request
+        # Parse input JSON data
         data = request.json
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
-        print(f"Received data: {data}")
-        # Ensure input is in the correct format
+        print(f"Received input data: {data}")
+
+        # Extract features from the input data
         input_features = [
             data.get("loan_amount"),
             data.get("rate_of_interest"),
@@ -56,27 +59,30 @@ def predict():
             data.get("Credit_Score")
         ]
 
+        # Ensure all features are provided
         if None in input_features:
             return jsonify({"error": "Missing one or more input features"}), 400
 
-        # Convert input to NumPy array and reshape for a single sample
+        # Convert input features to a NumPy array and reshape for a single sample
         input_array = np.array(input_features).reshape(1, -1)
 
-        # Scale input features
+        # Scale the input features using the loaded scaler
         scaled_input = scaler.transform(input_array)
 
-        # Make prediction
-        prediction_prob = model.predict(scaled_input)[0][0]  # Adjusted for TensorFlow/Keras output format
-        prediction_class = int(prediction_prob > 0.5)  # Binary classification threshold
+        # Make a prediction using the loaded model
+        prediction_prob = model.predict(scaled_input)[0][0]  # Single prediction
+        prediction_class = int(prediction_prob > 0.5)  # Apply threshold for binary classification
 
-        # Return prediction result
+        # Return the prediction as JSON
         return jsonify({
             "prediction_probability": float(prediction_prob),
             "prediction_class": prediction_class
         })
 
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        return jsonify({"error": f"An error occurred during prediction: {str(e)}"}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    # Ensure Flask runs in the correct working directory
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     app.run(debug=True)
