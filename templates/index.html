@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Approval Prediction</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include Axios library -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+
+    <div class="bod">
+        <h1>Loan Approval Prediction</h1>
+        <form id="predictionForm">
+            <div>
+                <label for="loan_amount">Loan Amount:</label>
+                <input type="number" id="loan_amount" name="loan_amount" required>
+            </div>
+    
+            <div>
+                <label for="rate_of_interest">Rate of Interest:</label>
+                <input type="number" id="rate_of_interest" name="rate_of_interest" step="0.01" required>
+            </div>
+
+            <div>
+
+                <label for="Interest_rate_spread">Interest Rate Spread:</label>
+                <input type="number" id="Interest_rate_spread" name="Interest_rate_spread" step="0.01" required>
+            </div>
+    
+            <div>
+                <label for="Upfront_charges">Upfront Charges:</label>
+                <input type="number" id="Upfront_charges" name="Upfront_charges" step="0.01" required>
+            </div>
+    
+            <div>
+                <label for="term_in_months">Term in Months:</label>
+                <input type="number" id="term_in_months" name="term_in_months" required>
+            </div>
+
+            <div>
+                <label for="property_value">Property Value:</label>
+                <input type="number" id="property_value" name="property_value" required>
+            </div>
+    
+    
+            <div>
+                <label for="income">Income:</label>
+                <input type="number" id="income" name="income" required>
+            </div>
+    
+            <div>
+
+                <label for="Credit_Score">Credit Score:</label>
+                <input type="number" id="Credit_Score" name="Credit_Score" required>
+            </div>
+    
+            <div class="btn">
+              <button type="submit">Submit</button>
+            </div>
+            
+        </form>
+    </div>
+
+
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function () {
+            $("#predictionForm").on("submit", function (event) {
+                event.preventDefault(); // Prevent the form from submitting normally
+
+                // Collect form data
+                const formData = {
+                    loan_amount: parseFloat($("#loan_amount").val()),
+                    rate_of_interest: parseFloat($("#rate_of_interest").val()),
+                    Interest_rate_spread: parseFloat($("#Interest_rate_spread").val()),
+                    Upfront_charges: parseFloat($("#Upfront_charges").val()),
+                    term_in_months: parseInt($("#term_in_months").val()),
+                    property_value: parseFloat($("#property_value").val()),
+                    income: parseFloat($("#income").val()),
+                    Credit_Score: parseInt($("#Credit_Score").val())
+                };
+
+                // Send data to the Flask server using Axios
+                axios.post('/predict', formData)
+                    .then(function (response) {
+                        // Display the result
+                        const result = response.data;
+                        $("#result").html(`
+                            <h2>Prediction Result</h2>
+                            <p><strong>Prediction Probability:</strong> ${result.prediction_probability.toFixed(2)}</p>
+                            <p><strong>Prediction Class:</strong> ${result.prediction_class === 1 ? "Approved" : "Not Approved"}</p>
+                        `);
+                    })
+                    .catch(function (error) {
+                        // Handle error
+                        const errorMessage = error.response && error.response.data ? error.response.data.error : "Unknown error occurred.";
+                        $("#result").html(`<p style="color: red;"><strong>Error:</strong> ${errorMessage}</p>`);
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
